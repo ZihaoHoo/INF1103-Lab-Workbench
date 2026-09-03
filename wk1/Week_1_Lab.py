@@ -42,3 +42,23 @@ def FollowerGrowthAct3():
     followers -= 10
     print("Day 3: Followers =", followers)
 #endregion
+
+#region Activity 4
+def UserProfileAct4():
+    username = input("Enter your username: ")
+    age = int(input("Enter your age: "))
+    category = input("Enter your category (e.g., Tech, Lifestyle, etc.): ")
+
+    title = "Instagram User Profile"
+    divider = "=" * len(title)
+
+    formatted_profile = f"""
+    {title}
+    {divider}
+    Username: {username}
+    Age: {age}
+    Category: {category}
+"""
+    print(formatted_profile)
+
+#endregion
