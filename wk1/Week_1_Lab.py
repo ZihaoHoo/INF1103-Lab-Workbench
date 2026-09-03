@@ -1,5 +1,9 @@
 # HOO ZI HAO (2603028)
 
+#region Imports
+import textwrap
+#endregion
+
 #region Global Variables
 Act1Msg = "What am I doing in this course?"
 username = ""
@@ -10,7 +14,7 @@ category = ""
 #endregion
 
 #region Activity 1
-def print_Act1(message, char="="):
+def print_formattedHeader(message, char="="):
     divider = char * len(message)
     print(f"{divider}\n{message}\n{divider}")
 #endregion 
@@ -45,6 +49,7 @@ def FollowerGrowthAct3():
 
 #region Activity 4
 def UserProfileAct4():
+    global username, age, category
     username = input("Enter your username: ")
     age = int(input("Enter your age: "))
     category = input("Enter your category (e.g., Tech, Lifestyle, etc.): ")
@@ -52,13 +57,39 @@ def UserProfileAct4():
     title = "Instagram User Profile"
     divider = "=" * len(title)
 
-    formatted_profile = f"""
-    {title}
-    {divider}
-    Username: {username}
-    Age: {age}
-    Category: {category}
-"""
+    formatted_profile = textwrap.dedent(f"""
+        {title}
+        {divider}
+        Username: {username}
+        Age: {age}
+        Category: {category}
+    """).strip()
+
     print(formatted_profile)
+#endregion
+
+#region Activity 5
+def SomethingFunAct5():
+    UserProfileAct4()
+    global age, category
+    funnyMsg = "What's exciting to you these days? A good coupon?"
+    if age>= 40 and category.lower() == "fun":
+        print(funnyMsg)
+#endregion
+
+#region Main Function
+def run_activity(activity_name, activity_function):
+    print_formattedHeader(activity_name)
+    activity_function()
+    print()
+
+def main():
+    run_activity("ACTIVITY 1", lambda: print_formattedHeader(Act1Msg))
+    run_activity("ACTIVITY 2", hardcodedAct2)
+    run_activity("ACTIVITY 3", FollowerGrowthAct3)
+    run_activity("ACTIVITY 4 & 5", SomethingFunAct5)
+
+if __name__ == "__main__":
+    main()
 
 #endregion
