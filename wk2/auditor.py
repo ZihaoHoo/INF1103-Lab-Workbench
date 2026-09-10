@@ -42,9 +42,18 @@ def inventory_audit():
             break
 #endregion
 
+#region Summary Report
+def summary_report():
+    print("\n" + formattedHeader("Inventory Audit Summary"))
+    print(f"Total items audited: {inventory_qty}")
+    print(f"Total failed entries: {failed_entries}")
+#endregion
+
 #region Main Program
 def main_program():
     print(formattedHeader("Welcome to the Smart Inventory Auditor!"))
+    inventory_audit()
+    summary_report()
 #endregion
 
 if __name__ == "__main__":
