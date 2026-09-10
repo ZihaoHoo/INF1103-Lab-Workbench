@@ -1,0 +1,53 @@
+commit 52decbde77c3c9d509595f09793962c9e1d00e4a
+Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
+Date:   Thu Sep 10 14:32:54 2026 +0800
+
+    Add Wk2 docker config file
+
+commit 5708b9e1f76480349fb335f2869ccaf8a83a8229
+Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
+Date:   Thu Sep 10 14:22:57 2026 +0800
+
+    Add Wk2 Lab, include summary report
+
+commit e120cc4b292a77883ace057f8066229edc55f297
+Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
+Date:   Thu Sep 10 14:21:44 2026 +0800
+
+    Add Wk2 Lab, main inventory audit function
+
+commit 83f54f49db87b63a230a9b3378cd85025bf8f8e6
+Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
+Date:   Thu Sep 10 14:20:35 2026 +0800
+
+    Add Wk2 Lab, include header
+
+commit bf179f26087eae468da953fef30f98ab91b4e22e
+Author: ZihaoHoo <5214194+ZihaoHoo@users.noreply.github.com>
+Date:   Thu Sep 3 18:26:25 2026 +0800
+
+    Add Wk1 Act 5
+
+commit 18b576979dfb0949be52fc034972a626bd24d457
+Author: ZihaoHoo <5214194+ZihaoHoo@users.noreply.github.com>
+Date:   Thu Sep 3 18:00:19 2026 +0800
+
+    Add Wk1 Act 4
+
+commit fdaf9652cb54b504a5523379d519ccd608d578ad
+Author: ZihaoHoo <5214194+ZihaoHoo@users.noreply.github.com>
+Date:   Thu Sep 3 17:54:21 2026 +0800
+
+    Add Wk1 Act 3
+
+commit 68ff7fef444dc61b8f5b50f24e8ab5881bbafabb
+Author: ZihaoHoo <5214194+ZihaoHoo@users.noreply.github.com>
+Date:   Thu Sep 3 17:33:21 2026 +0800
+
+    Add Wk1 Act 2
+
+commit 7dcceaf7ac7d093deec33ce9c740b264a5da052c
+Author: ZihaoHoo <5214194+ZihaoHoo@users.noreply.github.com>
+Date:   Thu Sep 3 17:21:35 2026 +0800
+
+    Add Wk1 Act 1
