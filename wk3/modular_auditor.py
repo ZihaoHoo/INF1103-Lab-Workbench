@@ -35,11 +35,17 @@ def max_inventory_check(inventory_qty, inventory_max_qty):
     return True
 #endregion
 
+#region Tax Calculation
+def calculate_tax(amount, tax_rate=0.10):
+    return amount * tax_rate
+#endregion
+
 #region Inventory Audit
 def inventory_audit():
     inventory_qty = 0
     inventory_max_qty = 500
     failed_entries = 0
+    deliveries_processed = 0
     while True:
         item_qty = get_valid_input()
         if item_qty is None:
@@ -49,18 +55,23 @@ def inventory_audit():
             break
 
         inventory_qty = process_delivery(inventory_qty, item_qty)
-
         print(f"Current inventory: {inventory_qty}/{inventory_max_qty}")
+
+        deliveries_processed += 1
+
+        calculated_tax = calculate_tax(item_qty)
+        print(f"Tax for this delivery: {calculated_tax:.2f}")
 
         if not max_inventory_check(inventory_qty, inventory_max_qty):
             break
-    generate_report(inventory_qty, failed_entries)
+    generate_report(inventory_qty, deliveries_processed, failed_entries)
 #endregion
 
 #region Summary Report
-def generate_report(total_units, failed_attempts):
+def generate_report(total_units, deliveries_processed, failed_attempts):
     print("\n" + formattedHeader("Inventory Audit Summary"))
     print(f"Total items audited: {total_units}")
+    print(f"Total deliveries processed: {deliveries_processed}")
     print(f"Total failed entries: {failed_attempts}")
 #endregion
 
