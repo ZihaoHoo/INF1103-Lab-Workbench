@@ -62,7 +62,7 @@ def inventory_audit():
         
         item = get_valid_input()
         if item == 'quit':
-            #save_inventory(inventoryList)
+            save_inventory(inventoryList)
             break
 
         if item is None:
@@ -84,7 +84,7 @@ def inventory_audit():
         print(f"Tax for this {item[0]}: {calculated_tax:.2f}")
 
         if not max_inventory_check(inventory_qty, inventory_max_qty):
-            #save_inventory(inventoryList)
+            save_inventory(inventoryList)
             break
     generate_report(inventory_qty, deliveries_processed, failed_entries,newly_added_orders)
 #endregion
@@ -116,6 +116,16 @@ def load_inventory():
     with open(file_path, "r", encoding="utf-8") as file:
         reader = csv.reader(file, delimiter=',')
         return [row for row in reader]
+#endregion
+
+#region save inventory to file
+def save_inventory(inventory):
+    script_dir = Path(__file__).parent
+    file_path = script_dir / "inventory.txt"
+
+    with open(file_path, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerows(inventory)
 #endregion
 
 #region show inital list
