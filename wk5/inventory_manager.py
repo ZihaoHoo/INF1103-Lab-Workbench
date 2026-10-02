@@ -30,6 +30,17 @@ def load_inventory():
             return []
 #endregion
 
+#region save inventory to JSON
+def save_inventory(inventory):
+    script_dir = Path(__file__).parent
+    file_path = script_dir / "inventory.json"
+    
+    # Save the list of dicts back to the JSON file
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(inventory, file, indent=4)
+    print("Inventory saved successfully to inventory.json.")
+#endregion
+
 #region print menu
 def print_menu():
     print("\n" + formattedHeader("Inventory Management Menu"))
