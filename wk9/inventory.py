@@ -1,6 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+#region Shipping interface
+class CanBeShipped(ABC):
+    @abstractmethod
+    def calculate_shipping_cost(self) -> float:
+        pass
+#endregion
+
 #region Product
 @dataclass(slots=True)
 class Product(ABC):
@@ -34,7 +41,7 @@ class Product(ABC):
 #endregion
 
 #region PhysicalProduct
-class PhysicalProduct(Product):
+class PhysicalProduct(Product, CanBeShipped):
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float) -> None:
         super().__init__(product_id, name, price, stock)
         self.weight = weight
@@ -43,6 +50,8 @@ class PhysicalProduct(Product):
         print(f"Weight: {self.weight:.2f} kg")
     def get_fulfilment_info(self) -> str:
         return "Requires physical shipping."
+    def calculate_shipping_cost(self) -> float:
+        return round(self.weight * 2.00, 2)
 #endregion
 
 # Manages a collection of Product objects using a dictionary.
