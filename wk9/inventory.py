@@ -35,7 +35,7 @@ class PhysicalProduct(Product):
         self.weight = weight
 
     def display_information(self) -> None:
-        print(f"ID: {self.product_id}\nName: {self.name}\nPrice: ${self.price:.2f}\nStock: {self.stock}")
+        super().display_information()
         print(f"Weight: {self.weight:.2f} kg")
 #endregion
 
@@ -105,6 +105,6 @@ class DigitalProduct(Product):
         self.download_size = download_size
 
     def display_information(self) -> None:
-        print(f"ID: {self.product_id}\nName: {self.name}\nPrice: ${self.price:.2f}\nStock: {self.stock}")
-        print(f"Download Size: {self.download_size:.2f} MB")
+        super().display_information()
+        print(f"Weight: {self.weight:.2f} kg")
 #endregion
