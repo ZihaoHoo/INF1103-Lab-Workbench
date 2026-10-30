@@ -52,6 +52,10 @@ class PhysicalProduct(Product, CanBeShipped):
         return "Requires physical shipping."
     def calculate_shipping_cost(self) -> float:
         return round(self.weight * 2.00, 2)
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data.update({"Type": "physical", "Weight": self.weight})
+        return data
 #endregion
 
 # Manages a collection of Product objects using a dictionary.
@@ -123,4 +127,8 @@ class DigitalProduct(Product):
         print(f"Weight: {self.weight:.2f} kg")
     def get_fulfilment_info(self) -> str:
         return "Delivered digitally via download."
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data.update({"Type": "digital", "Download_Size": self.download_size})
+        return data
 #endregion
