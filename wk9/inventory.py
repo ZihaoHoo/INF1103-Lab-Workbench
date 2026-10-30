@@ -1,8 +1,9 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 #region Product
 @dataclass(slots=True)
-class Product:
+class Product(ABC):
     product_id: str
     name: str
     price: float
@@ -26,6 +27,10 @@ class Product:
 
     def to_dict(self) -> dict:
         return {"ID": self.product_id, "Name": self.name, "Price": self.price, "Stock": self.stock}
+    
+    @abstractmethod
+    def get_fulfilment_info(self) -> str:
+        pass
 #endregion
 
 #region PhysicalProduct
@@ -33,10 +38,11 @@ class PhysicalProduct(Product):
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float) -> None:
         super().__init__(product_id, name, price, stock)
         self.weight = weight
-
     def display_information(self) -> None:
         super().display_information()
         print(f"Weight: {self.weight:.2f} kg")
+    def get_fulfilment_info(self) -> str:
+        return "Requires physical shipping."
 #endregion
 
 # Manages a collection of Product objects using a dictionary.
@@ -103,8 +109,9 @@ class DigitalProduct(Product):
     def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float) -> None:
         super().__init__(product_id, name, price, stock)
         self.download_size = download_size
-
     def display_information(self) -> None:
         super().display_information()
         print(f"Weight: {self.weight:.2f} kg")
+    def get_fulfilment_info(self) -> str:
+        return "Delivered digitally via download."
 #endregion
