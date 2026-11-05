@@ -71,6 +71,18 @@ def save_inventory(inventory: Inventory, orders: dict[str, Order]) -> None:
         json.dump(data, file, indent=4)
     print("Inventory and orders saved successfully.")
 
+#region Generate Order ID
+def generate_next_order_id(orders: dict[str, Order]) -> str:
+    max_num = 0
+    for order_id in orders:
+        try:
+            number = int(order_id.removeprefix("O"))
+            max_num = max(max_num, number)
+        except ValueError:
+            continue
+    return f"O{max_num + 1:03d}"
+#endregion
+
 def display_menu() -> None:
     options = ["Display all products", "Add a new product", "Update product stock", "Search for a product", "Remove a product", "Create an order", "Save inventory", "Exit"]
     print("\n===== Inventory Management System =====")
@@ -168,29 +180,33 @@ def remove_product(inventory: Inventory) -> None:
 #endregion
 
 #region Create order
-def create_order(inventory: Inventory) -> None:
-    order_id = input("Enter order ID: ").strip()
-    if not order_id:
-        print("Order ID cannot be empty.")
-        return
-    order = Order(order_id)
+def create_order(inventory: Inventory, orders: dict[str, Order]) -> Order | None:
+    if len(inventory) == 0:
+        print("No products available in inventory.")
+        return None
+    order = Order(generate_next_order_id(orders))
+    print(f"\n===== Create Order {order.order_id} =====")
     while True:
-        product_id = input("Enter product ID (blank to finish): ").strip().upper()
+        product_id = input("\nEnter Product ID (blank to finish): ").strip().upper()
         if not product_id: break
         if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
         products = inventory.find_products(product_id)
-        if not products:
-            print("Product not found.")
+        product = next((item for item in products if item.product_id == product_id), None)
+        if product is None:
+            print("Product not found. Please enter a valid Product ID.")
             continue
-        product = products[0]
+        print(f"Selected: {product.name} | Price: ${product.price:.2f} | Stock: {product.stock}")
         try:
-            quantity = int(input("Enter order quantity: "))
+            quantity = int(input("Enter quantity: "))
             order.add_order_line(product, quantity)
-            print("Order line added successfully.")
+            print(f"Added {quantity} x {product.name} to order.")
         except ValueError as error:
             print(f"Invalid input: {error}")
+    if not order.order_lines:
+        print("Order cancelled. No products were added.")
+        return None
     order.display_information()
-    print("Order preview completed. Order was not saved.")
+    return order
 #endregion
 
 def main() -> None:
