@@ -5,55 +5,71 @@ from inventory import Supplier, Product, PhysicalProduct, DigitalProduct, Invent
 # JSON file location
 FILE_PATH = Path(__file__).parent / "inventory.json"
 
-
-def load_inventory() -> Inventory:
+def load_inventory() -> tuple[Inventory, dict[str, Order]]:
     inventory = Inventory()
+    orders: dict[str, Order] = {}
     if not FILE_PATH.exists():
-        print("Inventory file not found. Starting with an empty inventory.")
-        return inventory
+        print("Inventory file not found. Starting with empty data.")
+        return inventory, orders
     try:
         with FILE_PATH.open("r", encoding="utf-8") as file:
             data = json.load(file)
-
-        if not isinstance(data, list):
-            raise ValueError("Inventory JSON must contain a list of products.")
-
+        if isinstance(data, list):
+            products_data, orders_data = data, []
+        elif isinstance(data, dict):
+            products_data = data["Products"]
+            orders_data = data["Orders"]
+        else:
+            raise ValueError("Invalid inventory JSON format.")
+        if not isinstance(products_data, list) or not isinstance(orders_data, list):
+            raise ValueError("Products and Orders must be lists.")
         suppliers: dict[str, Supplier] = {}
-
-        for item in data:
-            product_id = item["ID"]
-            name = item["Name"]
-            price = item["Price"]
-            stock = item["Stock"]
-            product_type = item["Type"]
+        # Load products
+        for item in products_data:
             supplier_data = item["Supplier"]
             supplier_id = supplier_data["Supplier_ID"]
 
             if supplier_id not in suppliers:
-                suppliers[supplier_id] = Supplier(supplier_id,supplier_data["Name"], supplier_data["Contact_Email"])
-            else:
-                existing_supplier = suppliers[supplier_id]
-                if (existing_supplier.name != supplier_data["Name"] or existing_supplier.contact_email != supplier_data["Contact_Email"]):
-                    raise ValueError(f"Conflicting details for supplier {supplier_id}.")
-                
+                suppliers[supplier_id] = Supplier(supplier_id, supplier_data["Name"], supplier_data["Contact_Email"])
+            elif (suppliers[supplier_id].name != supplier_data["Name"] or suppliers[supplier_id].contact_email != supplier_data["Contact_Email"]):
+                raise ValueError(f"Conflicting supplier details for {supplier_id}.")
             supplier = suppliers[supplier_id]
-            if product_type == "physical":
+            product_id, name, price, stock = item["ID"], item["Name"], item["Price"], item["Stock"]
+            if item["Type"] == "physical":
                 product = PhysicalProduct(product_id, name, price, stock, item["Weight"], supplier)
-            elif product_type == "digital":
-                product = DigitalProduct( product_id, name, price, stock, item["Download_Size"], supplier)
+            elif item["Type"] == "digital":
+                product = DigitalProduct(product_id, name, price, stock, item["Download_Size"], supplier)
             else:
-                raise ValueError(f"Unknown product type: {product_type}")
+                raise ValueError(f"Unknown product type: {item['Type']}")
             inventory.add_product(product)
-        print("Inventory loaded successfully.")
+        # Load orders
+        for item in orders_data:
+            order_id = item["Order_ID"]
+            if order_id in orders: raise ValueError(f"Duplicate Order ID: {order_id}")
+
+            order = Order(order_id)
+            for line in item["Order_Lines"]:
+                product_id = line["Product_ID"]
+                products = inventory.find_products(product_id)
+                product = next((p for p in products if p.product_id == product_id), None)
+                if product is None: raise ValueError(f"Order {order_id} references missing product {product_id}.")
+                order.add_order_line(product, line["Quantity"])
+            if not order.order_lines:
+                raise ValueError(f"Order {order_id} contains no order lines.")
+            orders[order_id] = order
+        print("Inventory and orders loaded successfully.")
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
         raise ValueError(f"Unable to load inventory: {error}") from error
-    return inventory
+    return inventory, orders
 
-def save_inventory(inventory: Inventory) -> None:
-    data = [product.to_dict() for product in inventory.get_products().values()]
+def save_inventory(inventory: Inventory, orders: dict[str, Order]) -> None:
+    data = {
+        "Products": [product.to_dict() for product in inventory.get_products().values()],
+        "Orders": [order.to_dict() for order in orders.values()]
+    }
     with FILE_PATH.open("w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
-    print("Inventory saved successfully.")
+    print("Inventory and orders saved successfully.")
 
 def display_menu() -> None:
     options = ["Display all products", "Add a new product", "Update product stock", "Search for a product", "Remove a product", "Create an order", "Save inventory", "Exit"]
