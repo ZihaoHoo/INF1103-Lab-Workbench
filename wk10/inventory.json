@@ -5,27 +5,46 @@
             "Name": "CD",
             "Price": 12.0,
             "Stock": 20,
-            "Type": "physical",
-            "Weight": 0.5,
             "Supplier": {
                 "Supplier_ID": "S001",
                 "Name": "ABC Supplies",
                 "Contact_Email": "abc@example.com"
-            }
+            },
+            "Type": "physical",
+            "Weight": 0.5
         },
         {
             "ID": "P002",
             "Name": "vscode",
             "Price": 12.0,
             "Stock": 30,
-            "Type": "digital",
-            "Download_Size": 250.0,
             "Supplier": {
                 "Supplier_ID": "S001",
                 "Name": "ABC Supplies",
                 "Contact_Email": "abc@example.com"
-            }
+            },
+            "Type": "digital",
+            "Download_Size": 250.0
         }
     ],
-    "Orders": []
+    "Orders": [
+        {
+            "Order_ID": "O001",
+            "Order_Lines": [
+                {
+                    "Product_ID": "P002",
+                    "Quantity": 31
+                }
+            ]
+        },
+        {
+            "Order_ID": "O002",
+            "Order_Lines": [
+                {
+                    "Product_ID": "P002",
+                    "Quantity": 1
+                }
+            ]
+        }
+    ]
 }
