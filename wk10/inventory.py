@@ -225,7 +225,15 @@ class Order:
             print("No order lines found.")
             return
         for index, line in enumerate(self.__order_lines, start=1):
-            print(f"\nOrder Line {index}")
             line.display_information()
         print(f"\nOrder Total: ${self.calculate_total():.2f}")
+
+    def to_dict(self) -> dict:
+        return {
+            "Order_ID": self.order_id,
+            "Order_Lines": [
+                {"Product_ID": line.product.product_id, "Quantity": line.quantity}
+                for line in self.__order_lines
+            ]
+        }
 #endregion
