@@ -88,13 +88,23 @@ class Inventory:
         self.__products[product.product_id] = product
     
     def remove_product(self, product_id: str) -> None:
+        product_id = product_id.strip().upper()
+        if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
         self.__products.pop(product_id, None)
 
-    def find_product(self, product_id: str) -> Product | None:
-        return self.__products.get(product_id)
+    def find_products(self, query: str) -> list[Product]:
+        query = query.strip()
+        if not query: return []
+        product_id = query.upper()
+        if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
+        product = self.__products.get(product_id)
+        if product is not None: return [product]
+        return [product for product in self.__products.values() if query.casefold() in product.name.casefold()]
     
     def update_stock(self, product_id: str, quantity: int) -> bool:
-        product = self.find_product(product_id)
+        product = self.__products.get(product_id.strip().upper())
+        if product is None and product_id.strip().isdigit():
+            product = self.__products.get(f"P{int(product_id.strip()):03d}")
         if product is None: return False
         product.update_stock(quantity)
         return True
