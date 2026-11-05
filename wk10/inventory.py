@@ -154,3 +154,62 @@ class DigitalProduct(Product):
         data.update({"Type": "digital", "Download_Size": self.download_size})
         return data
 #endregion
+
+#region OrderLine
+@dataclass(slots=True)
+class OrderLine:
+    product: Product
+    quantity: int
+
+    def __post_init__(self) -> None:
+        if isinstance(self.quantity, bool) or not isinstance(self.quantity, int):
+            raise ValueError("Order quantity must be a whole number.")
+        if self.quantity <= 0:
+            raise ValueError("Order quantity must be greater than zero.")
+
+    def calculate_subtotal(self) -> float:
+        return self.product.price * self.quantity
+
+    def display_information(self) -> None:
+        print(f"Product: {self.product.name}\nQuantity: {self.quantity}\nSubtotal: ${self.calculate_subtotal():.2f}")
+#endregion
+
+#region Order
+class Order:
+    def __init__(self, order_id: str) -> None:
+        self.order_id: str = order_id
+        self.__order_lines: list[OrderLine] = []
+
+    @property
+    def order_lines(self) -> tuple[OrderLine, ...]:
+        return tuple(self.__order_lines)
+
+    def add_order_line(self, product: Product, quantity: int) -> None:
+        if not isinstance(product, Product):
+            raise TypeError("Order line requires a Product object.")
+
+        order_line = OrderLine(product, quantity)
+        self.__order_lines.append(order_line)
+
+    def remove_order_line(self, index: int) -> None:
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ValueError("Order line index must be a whole number.")
+
+        if index < 0 or index >= len(self.__order_lines):
+            raise IndexError("Order line index does not exist.")
+
+        self.__order_lines.pop(index)
+
+    def calculate_total(self) -> float:
+        return sum(line.calculate_subtotal() for line in self.__order_lines)
+
+    def display_information(self) -> None:
+        print(f"\nOrder ID: {self.order_id}")
+        if not self.__order_lines:
+            print("No order lines found.")
+            return
+        for index, line in enumerate(self.__order_lines, start=1):
+            print(f"\nOrder Line {index}")
+            line.display_information()
+        print(f"\nOrder Total: ${self.calculate_total():.2f}")
+#endregion
