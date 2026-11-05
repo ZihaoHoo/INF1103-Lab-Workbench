@@ -201,10 +201,11 @@ class Order:
         return tuple(self.__order_lines)
 
     def add_order_line(self, product: Product, quantity: int) -> None:
-        if not isinstance(product, Product):
-            raise TypeError("Order line requires a Product object.")
-
+        if not isinstance(product, Product): raise TypeError("Order line requires a Product object.")
         order_line = OrderLine(product, quantity)
+        already_ordered = sum(line.quantity for line in self.__order_lines if line.product is product)
+        available_stock = product.stock - already_ordered
+        if quantity > available_stock: raise ValueError(f"Only {available_stock} units available for {product.name}.")
         self.__order_lines.append(order_line)
 
     def remove_order_line(self, index: int) -> None:
