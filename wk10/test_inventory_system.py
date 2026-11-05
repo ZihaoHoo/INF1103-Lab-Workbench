@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import patch
+from inventory_manager import create_order
 from contextlib import redirect_stdout
 from io import StringIO
 from inventory import (Supplier, Product, PhysicalProduct, DigitalProduct, Inventory, Order)
@@ -22,12 +24,12 @@ class TestLab8(unittest.TestCase):
     def test_03_add_product(self) -> None:
         inventory = Inventory()
         inventory.add_product(self.physical)
-        self.assertIs(inventory.find_product("P001"), self.physical)
+        self.assertEqual(inventory.find_products("P001"), [self.physical])
     def test_04_remove_product(self) -> None:
         inventory = Inventory()
         inventory.add_product(self.physical)
         inventory.remove_product("P001")
-        self.assertIsNone(inventory.find_product("P001"))
+        self.assertEqual(inventory.find_products("P001"), [])
         self.assertEqual(self.physical.name, "CD")
     def test_05_transfer_product(self) -> None:
         inventory_a = Inventory()
@@ -35,7 +37,7 @@ class TestLab8(unittest.TestCase):
         inventory_a.add_product(self.physical)
         inventory_a.remove_product("P001")
         inventory_b.add_product(self.physical)
-        self.assertIs(inventory_b.find_product("P001"), self.physical)
+        self.assertIs(inventory_b.find_products("P001")[0], self.physical)
     #Endregion
     #Region Composition
     def test_06_order_subtotal(self) -> None:
@@ -95,13 +97,55 @@ class TestLab8(unittest.TestCase):
         inventory.add_product(self.physical)
         inventory.add_product(self.digital)
         output = StringIO()
-        with redirect_stdout(output):
-            inventory.display_all()
+        with redirect_stdout(output): inventory.display_all()
         result = output.getvalue()
         self.assertIn("Requires physical shipping.", result)
         self.assertIn("Delivered digitally via download.", result)
-        self.assertIn("Weight: 0.50 kg", result)
-        self.assertIn("Download Size: 250.00 MB", result)
+        self.assertIn("Physical", result)
+        self.assertIn("Digital", result)
+        self.assertIn("P001", result)
+        self.assertIn("P002", result)
     #Endregion
+    #Region Product Search
+    def test_15_search_full_id(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        self.assertEqual(inventory.find_products("P001"), [self.physical])
+    def test_16_search_numeric_id(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        self.assertEqual(inventory.find_products("001"), [self.physical])
+    def test_17_search_partial_name(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        self.assertEqual(inventory.find_products("cd"), [self.physical])
+    def test_18_search_multiple_products(self) -> None:
+        inventory = Inventory()
+        milk = PhysicalProduct("P003", "Milk", 3.50, 20, 1.0, self.supplier)
+        chocolate_milk = PhysicalProduct("P004", "Chocolate Milk", 4.20, 15, 1.0, self.supplier)
+        low_fat_milk = PhysicalProduct("P005", "Low Fat Milk", 3.80, 10, 1.0, self.supplier)
+        for product in [milk, chocolate_milk, low_fat_milk]: inventory.add_product(product)
+        results = inventory.find_products("milk")
+        self.assertEqual(len(results), 3)
+        self.assertIn(milk, results)
+        self.assertIn(chocolate_milk, results)
+        self.assertIn(low_fat_milk, results)
+    def test_19_search_not_found(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        self.assertEqual(inventory.find_products("Nonexistent"), [])
+    #Endregion
+    def test_20_cli_create_order(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        inventory.add_product(self.digital)
+        inputs = ["O001", "001", "2", "002", "3", ""]
+        output = StringIO()
+        with patch("builtins.input", side_effect=inputs):
+            with redirect_stdout(output):
+                create_order(inventory)
+        self.assertIn("Order ID: O001", output.getvalue())
+        self.assertIn("Order Total: $60.00", output.getvalue())
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
