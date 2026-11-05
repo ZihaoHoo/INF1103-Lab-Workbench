@@ -56,6 +56,7 @@ def load_inventory() -> tuple[Inventory, dict[str, Order]]:
                 order.add_order_line(product, line["Quantity"])
             if not order.order_lines:
                 raise ValueError(f"Order {order_id} contains no order lines.")
+            order.mark_fulfilled()
             orders[order_id] = order
         print("Inventory and orders loaded successfully.")
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
@@ -237,13 +238,18 @@ def main() -> None:
         elif choice == "6":
             order = create_order(inventory, orders)
             if order is not None:
-                orders[order.order_id] = order
+                previous_stock = {line.product.product_id: line.product.stock for line in order.order_lines}
                 try:
+                    order.fulfil_order()
+                    orders[order.order_id] = order
                     save_inventory(inventory, orders)
-                    print(f"Order {order.order_id} saved successfully.")
-                except OSError as error:
-                    print(f"Unable to save order: {error}")
-                    print("Order remains in memory. Use Save Inventory to retry.")
+                    print(f"Order {order.order_id} saved successfully.\nInventory stock updated successfully.")
+                except (ValueError, OSError) as error:
+                    for product_id, stock in previous_stock.items():
+                        products = inventory.find_products(product_id)
+                        if products: products[0].update_stock(stock)
+                    orders.pop(order.order_id, None)
+                    print(f"Unable to complete order: {error}")
         elif choice == "7":
             try:
                 save_inventory(inventory, orders)

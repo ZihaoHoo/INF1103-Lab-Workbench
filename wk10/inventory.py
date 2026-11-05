@@ -195,6 +195,7 @@ class Order:
     def __init__(self, order_id: str) -> None:
         self.order_id: str = order_id
         self.__order_lines: list[OrderLine] = []
+        self.__fulfilled: bool = False
 
     @property
     def order_lines(self) -> tuple[OrderLine, ...]:
@@ -221,6 +222,7 @@ class Order:
         return sum(line.calculate_subtotal() for line in self.__order_lines)
     
     def fulfil_order(self) -> None:
+        if self.__fulfilled: raise ValueError("Order has already been fulfilled.")
         quantities: dict[str, int] = {}
         products: dict[str, Product] = {}
 
@@ -235,6 +237,10 @@ class Order:
         for product_id, quantity in quantities.items():
             product = products[product_id]
             product.update_stock(product.stock - quantity)
+        self.__fulfilled = True
+
+    def mark_fulfilled(self) -> None:
+        self.__fulfilled = True
 
     def display_information(self) -> None:
         print(f"\nOrder ID: {self.order_id}")
