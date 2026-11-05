@@ -118,10 +118,10 @@ def update_product_stock(inventory: Inventory) -> None:
     product_id = input("Enter product ID: ").strip().upper()
     if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
     products = inventory.find_products(product_id)
-    product = next((item for item in products if item.product_id == product_id), None)
-    if product is None:
+    if not products:
         print("Product not found.")
         return
+    product = products[0]
     print(f"Current stock for {product.name}: {product.stock}")
     try:
         quantity = int(input("Enter new stock quantity: "))
@@ -144,8 +144,7 @@ def remove_product(inventory: Inventory) -> None:
     product_id = input("Enter product ID: ").strip().upper()
     if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
     products = inventory.find_products(product_id)
-    product = next((item for item in products if item.product_id == product_id), None)
-    if product is None:
+    if not products:
         print("Product not found.")
         return
     inventory.remove_product(product_id)
@@ -161,15 +160,13 @@ def create_order(inventory: Inventory) -> None:
     order = Order(order_id)
     while True:
         product_id = input("Enter product ID (blank to finish): ").strip().upper()
+        if not product_id: break
         if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
         products = inventory.find_products(product_id)
-        product = next((item for item in products if item.product_id == product_id), None)
-        if not product_id:
-            break
-        product = inventory.find_products(product_id)
-        if product is None:
+        if not products:
             print("Product not found.")
             continue
+        product = products[0]
         try:
             quantity = int(input("Enter order quantity: "))
             order.add_order_line(product, quantity)
