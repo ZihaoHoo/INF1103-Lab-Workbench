@@ -168,13 +168,18 @@ def find_products(inventory: Inventory) -> None:
     inventory.display_products(products)
 
 #region Remove product
-def remove_product(inventory: Inventory) -> None:
-    product_id = input("Enter product ID: ").strip().upper()
+def remove_product(inventory: Inventory, orders: dict[str, Order]) -> None:
+    product_id = input("Enter Product ID to remove: ").strip().upper()
     if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
     products = inventory.find_products(product_id)
-    if not products:
+    product = next((item for item in products if item.product_id == product_id), None)
+    if product is None:
         print("Product not found.")
         return
+    for order in orders.values():
+        if any(line.product is product for line in order.order_lines):
+            print(f"Cannot remove {product_id}: referenced by Order {order.order_id}.")
+            return
     inventory.remove_product(product_id)
     print(f"Product {product_id} removed successfully.")
 #endregion
@@ -209,9 +214,10 @@ def create_order(inventory: Inventory, orders: dict[str, Order]) -> Order | None
     return order
 #endregion
 
+#region Main
 def main() -> None:
     try:
-        inventory = load_inventory()
+        inventory, orders = load_inventory()
     except ValueError as error:
         print(error)
         return
@@ -227,17 +233,25 @@ def main() -> None:
         elif choice == "4":
             find_products(inventory)
         elif choice == "5":
-            remove_product(inventory)
+            remove_product(inventory, orders)
         elif choice == "6":
-            create_order(inventory)
+            order = create_order(inventory, orders)
+            if order is not None:
+                orders[order.order_id] = order
+                try:
+                    save_inventory(inventory, orders)
+                    print(f"Order {order.order_id} saved successfully.")
+                except OSError as error:
+                    print(f"Unable to save order: {error}")
+                    print("Order remains in memory. Use Save Inventory to retry.")
         elif choice == "7":
             try:
-                save_inventory(inventory)
+                save_inventory(inventory, orders)
             except OSError as error:
                 print(f"Unable to save inventory: {error}")
         elif choice == "8":
             try:
-                save_inventory(inventory)
+                save_inventory(inventory, orders)
                 print("Exiting Inventory Management System.")
             except OSError as error:
                 print(f"Unable to save inventory: {error}")
@@ -245,6 +259,7 @@ def main() -> None:
             break
         else:
             print("Invalid choice. Please enter a number from 1 to 8.")
+#endregion
 
 if __name__ == "__main__":
     main()
