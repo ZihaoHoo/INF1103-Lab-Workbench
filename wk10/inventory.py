@@ -108,28 +108,25 @@ class Inventory:
         if product is None: return False
         product.update_stock(quantity)
         return True
+    
+    @staticmethod
+    def display_products(products: list[Product]) -> None:
+        if not products:
+            print("No products found.")
+            return
+        headers = ["ID", "Name", "Type", "Price", "Stock", "Supplier", "Fulfilment"]
+        rows = [[product.product_id, product.name, type(product).__name__.removesuffix("Product"), f"${product.price:.2f}", 
+                 str(product.stock), product.supplier.name, product.get_fulfilment_info() ] for product in products ]
+        widths = [max(len(str(value)) for value in [headers[i]] + [row[i] for row in rows]) for i in range(len(headers))]
+        fmt = " | ".join(f"{{:<{width}}}" for width in widths)
+        print(fmt.format(*headers))
+        print("-" * (sum(widths) + 3 * (len(headers) - 1)))
+        for row in rows:
+            print(fmt.format(*row))
 
     def display_all(self) -> None:
-        if not self.__products:
-            print("No products found in inventory.")
-            return
         print("\n===== Current Inventory =====")
-
-        for product in self.__products.values():
-            print()
-            product.display_information()
-            print(f"Fulfilment: {product.get_fulfilment_info()}")
-            print("-" * 30)
-
-    def display_all_products(self) -> None:
-        if not self.__products:
-            print("No products found in inventory.")
-            return
-
-        for product in self.__products.values():
-            print()
-            product.display_information()
-            print(f"Fulfilment: {product.get_fulfilment_info()}")
+        self.display_products(list(self.__products.values()))
 
     def generate_next_id(self) -> str:
         max_num = 0

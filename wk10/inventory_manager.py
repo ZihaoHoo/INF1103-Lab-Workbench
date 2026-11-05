@@ -116,13 +116,13 @@ def add_product(inventory: Inventory) -> None:
 
 def update_product_stock(inventory: Inventory) -> None:
     product_id = input("Enter product ID: ").strip().upper()
-    product = inventory.find_product(product_id)
-
+    if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
+    products = inventory.find_products(product_id)
+    product = next((item for item in products if item.product_id == product_id), None)
     if product is None:
         print("Product not found.")
         return
     print(f"Current stock for {product.name}: {product.stock}")
-
     try:
         quantity = int(input("Enter new stock quantity: "))
         if inventory.update_stock(product_id, quantity):
@@ -130,24 +130,21 @@ def update_product_stock(inventory: Inventory) -> None:
     except ValueError as error:
         print(f"Invalid input: {error}")
 
-
-def find_product(inventory: Inventory) -> None:
-    product_id = input("Enter product ID to search: ").strip().upper()
-    product = inventory.find_product(product_id)
-
-    if product is None:
-        print("Product not found.")
+def find_products(inventory: Inventory) -> None:
+    query = input("Enter product ID or name: ").strip()
+    products = inventory.find_products(query)
+    if not products:
+        print("No matching products found.")
         return
-    print("\nProduct found:")
-    product.display_information()
-    print(f"Fulfilment: {product.get_fulfilment_info()}\nSupplier Information:{product.supplier.display_information()}")
-    if isinstance(product, PhysicalProduct):
-        print(f"Shipping Cost: ${product.calculate_shipping_cost():.2f}")
+    print(f"\nFound {len(products)} matching product(s):")
+    inventory.display_products(products)
 
 #region Remove product
 def remove_product(inventory: Inventory) -> None:
-    product_id = input("Enter product ID to remove: ").strip().upper()
-    product = inventory.find_product(product_id)
+    product_id = input("Enter product ID: ").strip().upper()
+    if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
+    products = inventory.find_products(product_id)
+    product = next((item for item in products if item.product_id == product_id), None)
     if product is None:
         print("Product not found.")
         return
@@ -164,9 +161,12 @@ def create_order(inventory: Inventory) -> None:
     order = Order(order_id)
     while True:
         product_id = input("Enter product ID (blank to finish): ").strip().upper()
+        if product_id.isdigit(): product_id = f"P{int(product_id):03d}"
+        products = inventory.find_products(product_id)
+        product = next((item for item in products if item.product_id == product_id), None)
         if not product_id:
             break
-        product = inventory.find_product(product_id)
+        product = inventory.find_products(product_id)
         if product is None:
             print("Product not found.")
             continue
@@ -196,7 +196,7 @@ def main() -> None:
         elif choice == "3":
             update_product_stock(inventory)
         elif choice == "4":
-            find_product(inventory)
+            find_products(inventory)
         elif choice == "5":
             remove_product(inventory)
         elif choice == "6":
