@@ -191,6 +191,38 @@ class TestLab8(unittest.TestCase):
             self.assertEqual(loaded_orders["O001"].calculate_total(), 24.0)
             self.assertIs(loaded_orders["O001"].order_lines[0].product, loaded_inventory.find_products("P001")[0])
     #Endregion
-
+    #Region Stock Deduction
+    def test_27_order_rejects_excess_stock(self) -> None:
+        order = Order("O001")
+        with self.assertRaises(ValueError): order.add_order_line(self.physical, 21)
+    def test_28_order_checks_cumulative_quantity(self) -> None:
+        order = Order("O001")
+        order.add_order_line(self.physical, 15)
+        with self.assertRaises(ValueError): order.add_order_line(self.physical, 10)
+        self.assertEqual(len(order.order_lines), 1)
+    def test_29_order_deducts_stock(self) -> None:
+        order = Order("O001")
+        order.add_order_line(self.physical, 5)
+        order.fulfil_order()
+        self.assertEqual(self.physical.stock, 15)
+    def test_30_order_deducts_multiple_products(self) -> None:
+        order = Order("O001")
+        order.add_order_line(self.physical, 5)
+        order.add_order_line(self.digital, 10)
+        order.fulfil_order()
+        self.assertEqual(self.physical.stock, 15)
+        self.assertEqual(self.digital.stock, 20)
+    def test_31_order_does_not_deduct_before_fulfilment(self) -> None:
+        order = Order("O001")
+        order.add_order_line(self.physical, 5)
+        self.assertEqual(self.physical.stock, 20)
+    def test_32_order_cannot_be_fulfilled_twice(self) -> None:
+        order = Order("O001")
+        order.add_order_line(self.physical, 5)
+        order.fulfil_order()
+        with self.assertRaises(ValueError): order.fulfil_order()
+        self.assertEqual(self.physical.stock, 15)
+    #Endregion
+    
 if __name__ == "__main__":
     unittest.main(verbosity=2)
