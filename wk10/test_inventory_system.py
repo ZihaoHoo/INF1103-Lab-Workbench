@@ -1,9 +1,12 @@
-import unittest
-from unittest.mock import patch
-from inventory_manager import create_order
 from contextlib import redirect_stdout
 from io import StringIO
-from inventory import (Supplier, Product, PhysicalProduct, DigitalProduct, Inventory, Order)
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+from unittest.mock import MagicMock, patch
+from inventory import DigitalProduct, Inventory, Order, PhysicalProduct, Product, Supplier
+from inventory_manager import create_order, generate_next_order_id, load_inventory, save_inventory
+
 
 class TestLab8(unittest.TestCase):
     def setUp(self) -> None:
@@ -143,9 +146,51 @@ class TestLab8(unittest.TestCase):
         output = StringIO()
         with patch("builtins.input", side_effect=inputs):
             with redirect_stdout(output):
-                create_order(inventory)
+                create_order(inventory, {})
         self.assertIn("Order ID: O001", output.getvalue())
         self.assertIn("Order Total: $60.00", output.getvalue())
+    #Region Order Persistence
+    def test_21_generate_first_order_id(self) -> None:
+        self.assertEqual(generate_next_order_id({}), "O001")
+    def test_22_generate_next_order_id(self) -> None:
+        orders = {"O001": Order("O001"), "O003": Order("O003")}
+        self.assertEqual(generate_next_order_id(orders), "O004")
+    def test_23_order_serialization(self) -> None:
+        order = Order("O001")
+        order.add_order_line(self.physical, 2)
+        self.assertEqual(order.to_dict(), {"Order_ID": "O001", "Order_Lines": [{"Product_ID": "P001", "Quantity": 2}]})
+    def test_24_empty_order_cancelled(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        with patch("builtins.input", side_effect=[""]):
+            with redirect_stdout(StringIO()):
+                order = create_order(inventory, {})
+        self.assertIsNone(order)
+    def test_25_create_order_by_numeric_product_id(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        with patch("builtins.input", side_effect=["001", "2", ""]):
+            with redirect_stdout(StringIO()):
+                order = create_order(inventory, {})
+        self.assertIsNotNone(order)
+        self.assertEqual(order.order_id, "O001")
+        self.assertIs(order.order_lines[0].product, self.physical)
+        self.assertEqual(order.calculate_total(), 24.0)
+    def test_26_order_save_load(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.physical)
+        order = Order("O001")
+        order.add_order_line(self.physical, 2)
+        orders = {"O001": order}
+        with TemporaryDirectory() as directory:
+            test_path = Path(directory) / "inventory.json"
+            with patch("inventory_manager.FILE_PATH", test_path):
+                save_inventory(inventory, orders)
+                loaded_inventory, loaded_orders = load_inventory()
+            self.assertEqual(len(loaded_orders), 1)
+            self.assertEqual(loaded_orders["O001"].calculate_total(), 24.0)
+            self.assertIs(loaded_orders["O001"].order_lines[0].product, loaded_inventory.find_products("P001")[0])
+    #Endregion
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
