@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import math
 
 #region Shipping interface
 class CanBeShipped(ABC):
@@ -33,6 +34,10 @@ class Product(ABC):
 
     def __post_init__(self) -> None:
         self.validate_stock(self.stock)
+        if not isinstance(self.supplier, Supplier):
+            raise TypeError("Supplier must be a Supplier object.")
+        if isinstance(self.price, bool) or not isinstance(self.price, (int, float)) or not math.isfinite(self.price) or self.price < 0:
+            raise ValueError("Price must be a finite non-negative number.")
 
     def validate_stock(self, quantity: int) -> None:
         if isinstance(quantity, bool) or not isinstance(quantity, int):
@@ -59,6 +64,8 @@ class Product(ABC):
 class PhysicalProduct(Product, CanBeShipped):
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float, supplier: Supplier) -> None:
         super().__init__(product_id, name, price, stock, supplier)
+        if isinstance(weight, bool) or not isinstance(weight, (int, float)) or not math.isfinite(weight) or weight < 0:
+            raise ValueError("Weight must be a finite non-negative number.")
         self.weight = weight
     def display_information(self) -> None:
         super().display_information()
@@ -150,6 +157,8 @@ class Inventory:
 class DigitalProduct(Product):
     def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float, supplier: Supplier) -> None:
         super().__init__(product_id, name, price, stock, supplier)
+        if isinstance(download_size, bool) or not isinstance(download_size, (int, float)) or not math.isfinite(download_size) or download_size < 0:
+            raise ValueError("Download size must be a finite non-negative number.")
         self.download_size = download_size
     def display_information(self) -> None:
         super().display_information()
