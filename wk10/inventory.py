@@ -219,6 +219,22 @@ class Order:
 
     def calculate_total(self) -> float:
         return sum(line.calculate_subtotal() for line in self.__order_lines)
+    
+    def fulfil_order(self) -> None:
+        quantities: dict[str, int] = {}
+        products: dict[str, Product] = {}
+
+        # validates all required quantities
+        for line in self.__order_lines:
+            product_id = line.product.product_id
+            quantities[product_id] = quantities.get(product_id, 0) + line.quantity
+            products[product_id] = line.product
+        for product_id, quantity in quantities.items():
+            if quantity > products[product_id].stock: raise ValueError(f"Insufficient stock for {products[product_id].name}.")
+        # deducts stock
+        for product_id, quantity in quantities.items():
+            product = products[product_id]
+            product.update_stock(product.stock - quantity)
 
     def display_information(self) -> None:
         print(f"\nOrder ID: {self.order_id}")
