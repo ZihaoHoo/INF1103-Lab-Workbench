@@ -86,14 +86,16 @@ class Inventory:
         if product.product_id in self.__products:
             raise ValueError(f"Product ID {product.product_id} already exists.")
         self.__products[product.product_id] = product
+    
+    def remove_product(self, product_id: str) -> None:
+        self.__products.pop(product_id, None)
 
-    def search_product(self, product_id: str) -> Product | None:
+    def find_product(self, product_id: str) -> Product | None:
         return self.__products.get(product_id)
-
+    
     def update_stock(self, product_id: str, quantity: int) -> bool:
-        product = self.search_product(product_id)
-        if product is None:
-            return False
+        product = self.find_product(product_id)
+        if product is None: return False
         product.update_stock(quantity)
         return True
 
@@ -101,18 +103,23 @@ class Inventory:
         if not self.__products:
             print("No products found in inventory.")
             return
+        print("\n===== Current Inventory =====")
 
-        headers = ["ID", "Name", "Price", "Stock"]
-        rows = [[product.product_id, product.name, f"${product.price:.2f}", str(product.stock)] for product in self.__products.values()]
-        widths = [max(len(headers[i]), *(len(row[i]) for row in rows)) for i in range(len(headers))]
-        fmt = (f"{{:<{widths[0]}}} | " f"{{:<{widths[1]}}} | " f"{{:<{widths[2]}}} | " f"{{:<{widths[3]}}}")
+        for product in self.__products.values():
+            print()
+            product.display_information()
+            print(f"Fulfilment: {product.get_fulfilment_info()}")
+            print("-" * 30)
 
-        print("\nCurrent Inventory")
-        print(fmt.format(*headers))
-        print("-" * (sum(widths) + 3 * (len(headers) - 1)))
+    def display_all_products(self) -> None:
+        if not self.__products:
+            print("No products found in inventory.")
+            return
 
-        for row in rows:
-            print(fmt.format(*row))
+        for product in self.__products.values():
+            print()
+            product.display_information()
+            print(f"Fulfilment: {product.get_fulfilment_info()}")
 
     def generate_next_id(self) -> str:
         max_num = 0
