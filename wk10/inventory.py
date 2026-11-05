@@ -8,6 +8,20 @@ class CanBeShipped(ABC):
         pass
 #endregion
 
+#region Supplier
+@dataclass(slots=True)
+class Supplier:
+    supplier_id: str
+    name: str
+    contact_email: str
+
+    def display_information(self) -> None:
+        print(f"Supplier ID: {self.supplier_id}\nSupplier Name: {self.name}\nContact Email: {self.contact_email}")
+
+    def to_dict(self) -> dict:
+        return {"Supplier_ID": self.supplier_id, "Name": self.name, "Contact_Email": self.contact_email}
+#endregion
+
 #region Product
 @dataclass(slots=True)
 class Product(ABC):
@@ -15,6 +29,7 @@ class Product(ABC):
     name: str
     price: float
     stock: int
+    supplier: Supplier
 
     def __post_init__(self) -> None:
         self.validate_stock(self.stock)
@@ -30,10 +45,10 @@ class Product(ABC):
         self.stock = quantity
 
     def display_information(self) -> None:
-        print(f"ID: {self.product_id}\nName: {self.name}\nPrice: ${self.price:.2f}\nStock: {self.stock}")
+        print(f"ID: {self.product_id}\nName: {self.name}\nPrice: ${self.price:.2f}\nStock: {self.stock}\nSupplier: {self.supplier.name}")
 
     def to_dict(self) -> dict:
-        return {"ID": self.product_id, "Name": self.name, "Price": self.price, "Stock": self.stock}
+        return {"ID": self.product_id, "Name": self.name, "Price": self.price, "Stock": self.stock, "Supplier": self.supplier.to_dict()}
     
     @abstractmethod
     def get_fulfilment_info(self) -> str:
@@ -42,8 +57,8 @@ class Product(ABC):
 
 #region PhysicalProduct
 class PhysicalProduct(Product, CanBeShipped):
-    def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float) -> None:
-        super().__init__(product_id, name, price, stock)
+    def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float, supplier: Supplier) -> None:
+        super().__init__(product_id, name, price, stock, supplier)
         self.weight = weight
     def display_information(self) -> None:
         super().display_information()
@@ -119,8 +134,8 @@ class Inventory:
 
 #region DigitalProduct
 class DigitalProduct(Product):
-    def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float) -> None:
-        super().__init__(product_id, name, price, stock)
+    def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float, supplier: Supplier) -> None:
+        super().__init__(product_id, name, price, stock, supplier)
         self.download_size = download_size
     def display_information(self) -> None:
         super().display_information()
