@@ -134,22 +134,32 @@ def get_supplier(inventory: Inventory) -> Supplier:
     return Supplier(supplier_id, name, contact_email)
 #endregion
 
-# Keep asking until the user provides a finite positive number.
-def get_positive_float(prompt: str) -> float:
+# Keep asking until the input meets the selected number and range rules.
+def get_number(prompt: str, *, whole_number: bool = False, allow_zero: bool = False) -> int | float:
     while True:
         try:
-            value = float(input(prompt))
+            text = input(prompt)
+            value = int(text) if whole_number else float(text)
         except ValueError:
-            print("Please enter a valid number, e.g. 12.50")
+            if whole_number:
+                print("Please enter a whole number, e.g. 0 or 10.")
+            else:
+                print("Please enter a valid number, e.g. 12.50")
             continue
-        try:
-            if not math.isfinite(value) or value <= 0:
-                raise ValueError("Please enter a number greater than zero.")
-        except ValueError as error:
-            print(error)
-        else:
-            return value
-        
+        # Reject NaN and infinity when accepting decimal numbers.
+        if not whole_number and not math.isfinite(value):
+            print("Please enter a finite number.")
+            continue
+        # Apply either the positive or non-negative range rule.
+        if allow_zero:
+            if value < 0:
+                print("Please enter a number that is zero or greater.")
+                continue
+        elif value <= 0:
+            print("Please enter a number greater than zero.")
+            continue
+        return value
+    
 def add_product(inventory: Inventory) -> None:
     product_type = input( "Choose product type (1. Physical, 2. Digital): " ).strip()
     if product_type not in ("1", "2"):
@@ -160,19 +170,19 @@ def add_product(inventory: Inventory) -> None:
         if not name:
             print("Product name cannot be empty.")
             return
-        # Retry invalid price input before collecting the remaining details.
-        price = get_positive_float("Enter product price: $")
-        stock = int(input("Enter initial stock quantity: "))
+        # Retry invalid price and stock input without restarting product creation.
+        price = get_number("Enter product price: $")
+        stock = get_number("Enter initial stock quantity: ", whole_number=True, allow_zero=True)
 
         supplier = get_supplier(inventory)
         product_id = inventory.generate_next_id()
 
-        # Collect type-specific details before delegating construction to the factory.
+        # Retry invalid measurements before creating the selected product type.
         if product_type == "1":
-            details = {"weight": float(input("Enter product weight (kg): "))}
+            details = {"weight": get_number( "Enter product weight (kg): ", allow_zero=True)}
             factory_type = "physical"
         else:
-            details = {"download_size": float(input("Enter download size (MB): "))}
+            details = {"download_size": get_number("Enter download size (MB): ", allow_zero=True)}
             factory_type = "digital"
 
         product = ProductFactory.create(factory_type, product_id, name, price, stock, supplier, **details)
@@ -190,12 +200,10 @@ def update_product_stock(inventory: Inventory) -> None:
         return
     product = products[0]
     print(f"Current stock for {product.name}: {product.stock}")
-    try:
-        quantity = int(input("Enter new stock quantity: "))
-        if inventory.update_stock(product_id, quantity):
-            print("Stock updated successfully.")
-    except ValueError as error:
-        print(f"Invalid input: {error}")
+    # Retry invalid stock quantities before applying the update.
+    quantity = get_number("Enter new stock quantity: ", whole_number=True, allow_zero=True)
+    if inventory.update_stock(product_id, quantity):
+        print("Stock updated successfully.")
 
 def find_products(inventory: Inventory) -> None:
     query = input("Enter product ID or name: ").strip()

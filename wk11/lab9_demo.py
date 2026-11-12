@@ -1,7 +1,7 @@
 from pathlib import Path
 from discounts import BulkDiscount, PercentageDiscount, StudentDiscount
 from inventory import Inventory, Order, ProductFactory, Supplier
-from inventory_manager import get_positive_float, load_products
+from inventory_manager import get_number, load_products
 
 # Demonstrate the lab requirements without modifying the saved inventory.
 def main() -> None:
@@ -37,7 +37,7 @@ def main() -> None:
     load_products(str(missing_path), Inventory(), supplier)
 
     # Enter abc, then -5, then 12.50 to check the input predictions.
-    price = get_positive_float("\nEnter a positive price: ")
+    price = get_number("\nEnter a positive price: ")
     print(f"Accepted price: ${price:.2f}")
 
 if __name__ == "__main__":

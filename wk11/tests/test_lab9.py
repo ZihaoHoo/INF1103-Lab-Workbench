@@ -6,8 +6,7 @@ import unittest
 from unittest.mock import patch
 from discounts import (DiscountStrategy, NoDiscount, PercentageDiscount, BulkDiscount, StudentDiscount,)
 from inventory import (DigitalProduct, Inventory, Order, OrderLine, PhysicalProduct, ProductFactory, Supplier,)
-from inventory_manager import (choose_discount, get_positive_float, load_inventory, load_products, save_inventory,)
-
+from inventory_manager import (add_product, choose_discount, get_number, load_inventory, load_products, save_inventory, update_product_stock,)
 class TestLab9(unittest.TestCase):
     # Give each test independent products and supplier data.
     def setUp(self) -> None:
@@ -117,7 +116,7 @@ class TestLab9(unittest.TestCase):
         output = StringIO()
         with patch("builtins.input", side_effect=["abc", "-5", "12.50"]):
             with redirect_stdout(output):
-                result = get_positive_float("Price: ")
+                result = get_number("Price: ")
 
         self.assertEqual(result, 12.5)
         self.assertEqual(output.getvalue().splitlines(), [ "Please enter a valid number, e.g. 12.50", "Please enter a number greater than zero.", ])
@@ -125,7 +124,7 @@ class TestLab9(unittest.TestCase):
     def test_nonfinite_price_input_retries(self) -> None:
         with patch("builtins.input", side_effect=["nan", "inf", "0", "10"]):
             with redirect_stdout(StringIO()):
-                result = get_positive_float("Price: ")
+                result = get_number("Price: ")
         self.assertEqual(result, 10.0)
 
     def test_discount_selection_retries(self) -> None:
@@ -205,7 +204,6 @@ class TestLab9(unittest.TestCase):
                         with redirect_stdout(StringIO()):
                             save_inventory(inventory, {"O001": order})
                             loaded_inventory, loaded_orders = load_inventory()
-
                 restored = loaded_orders["O001"]
                 self.assertIsInstance(restored.discount, type(discount))
                 self.assertEqual(restored.calculate_total(), expected_total)
@@ -220,5 +218,84 @@ class TestLab9(unittest.TestCase):
         self.assertIsInstance(order.discount, NoDiscount)
         self.assertEqual(order.calculate_total(), 250.0)
 
+        # Reject text, fractional stock, and negative stock before accepting zero.
+    def test_stock_input_retries(self) -> None:
+        output = StringIO()
+        with patch("builtins.input", side_effect=["abc", "2.5", "-1", "0"]):
+            with redirect_stdout(output):
+                result = get_number("Stock: ", whole_number=True, allow_zero=True)
+        self.assertIsInstance(result, int)
+        self.assertEqual(result, 0)
+        self.assertEqual(output.getvalue().splitlines(),
+            [
+                "Please enter a whole number, e.g. 0 or 10.",
+                "Please enter a whole number, e.g. 0 or 10.",
+                "Please enter a number that is zero or greater.",
+            ],
+        )
+
+    # Reject text, negatives, NaN, and infinity before accepting a measurement.
+    def test_measurement_input_retries(self) -> None:
+        output = StringIO()
+        with patch("builtins.input", side_effect=["abc", "-1", "nan", "inf", "1.5"]):
+            with redirect_stdout(output):
+                result = get_number("Measurement: ", allow_zero=True)
+        self.assertIsInstance(result, float)
+        self.assertEqual(result, 1.5)
+        self.assertEqual(output.getvalue().splitlines(),
+            [
+                "Please enter a valid number, e.g. 12.50",
+                "Please enter a number that is zero or greater.",
+                "Please enter a finite number.",
+                "Please enter a finite number.",
+            ],
+        )
+
+    # Preserve the existing rule that measurements may be zero.
+    def test_measurement_input_accepts_zero(self) -> None:
+        with patch("builtins.input", return_value="0"):
+            result = get_number("Measurement: ", allow_zero=True)
+        self.assertIsInstance(result, float)
+        self.assertEqual(result, 0.0)
+
+    # Confirm physical product creation continues after invalid stock and weight.
+    def test_add_physical_product_retries_stock_and_weight(self) -> None:
+        inventory = Inventory()
+        inputs = ["1", "Desk Lamp", "25", "abc", "-1", "10", "SUP001", "Test Supplier", "test@example.com", "abc", "-2", "nan", "1.5"]
+
+        with patch("builtins.input", side_effect=inputs):
+            with redirect_stdout(StringIO()):
+                add_product(inventory)
+
+        self.assertEqual(len(inventory), 1)
+        product = inventory.get_products()["P001"]
+        self.assertIsInstance(product, PhysicalProduct)
+        self.assertEqual(product.stock, 10)
+        self.assertEqual(product.weight, 1.5)
+
+    # Confirm digital product creation continues after invalid download sizes.
+    def test_add_digital_product_retries_download_size(self) -> None:
+        inventory = Inventory()
+        inputs = ["2", "Photo Editor", "49.90", "100", "SUP001", "Test Supplier", "test@example.com", "abc", "-5", "inf", "250",]
+
+        with patch("builtins.input", side_effect=inputs):
+            with redirect_stdout(StringIO()):
+                add_product(inventory)
+
+        self.assertEqual(len(inventory), 1)
+        product = inventory.get_products()["P001"]
+        self.assertIsInstance(product, DigitalProduct)
+        self.assertEqual(product.download_size, 250.0)
+
+    # Confirm stock updates retry invalid input and allow setting stock to zero.
+    def test_update_stock_retries(self) -> None:
+        inventory = Inventory()
+        inventory.add_product(self.product)
+
+        with patch("builtins.input", side_effect=["P001", "abc", "-1", "0"]):
+            with redirect_stdout(StringIO()):
+                update_product_stock(inventory)
+
+        self.assertEqual(self.product.stock, 0)
 if __name__ == "__main__":
     unittest.main(verbosity=2)
