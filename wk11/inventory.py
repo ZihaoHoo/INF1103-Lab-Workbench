@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import math
+from discounts import DiscountStrategy, NoDiscount, discount_from_dict
 
 #region Shipping interface
 class CanBeShipped(ABC):
@@ -192,10 +193,18 @@ class OrderLine:
 
 #region Order
 class Order:
-    def __init__(self, order_id: str) -> None:
+
+    def __init__(self, order_id: str, discount: DiscountStrategy | None = None,) -> None:
         self.order_id: str = order_id
         self.__order_lines: list[OrderLine] = []
         self.__fulfilled: bool = False
+        self.set_discount(NoDiscount() if discount is None else discount)
+
+    # Allow the discount behaviour to change on an existing order.
+    def set_discount(self, discount: DiscountStrategy) -> None:
+        if not isinstance(discount, DiscountStrategy):
+            raise TypeError("Discount must be a DiscountStrategy object.")
+        self.discount: DiscountStrategy = discount
 
     @property
     def order_lines(self) -> tuple[OrderLine, ...]:
@@ -218,8 +227,10 @@ class Order:
 
         self.__order_lines.pop(index)
 
+    # Delegate the discount calculation to the selected strategy.
     def calculate_total(self) -> float:
-        return sum(line.calculate_subtotal() for line in self.__order_lines)
+        total = sum(line.calculate_subtotal() for line in self.__order_lines)
+        return self.discount.apply(total)
     
     def fulfil_order(self) -> None:
         if self.__fulfilled: raise ValueError("Order has already been fulfilled.")
@@ -251,12 +262,29 @@ class Order:
             line.display_information()
         print(f"\nOrder Total: ${self.calculate_total():.2f}")
 
+    # Save the selected discount together with the order lines.
     def to_dict(self) -> dict:
         return {
             "Order_ID": self.order_id,
+            "Discount": self.discount.to_dict(),
             "Order_Lines": [
                 {"Product_ID": line.product.product_id, "Quantity": line.quantity}
                 for line in self.__order_lines
-            ]
+            ],
         }
+
+    # Restore historical order lines without checking or deducting remaining stock.
+    @classmethod
+    def from_dict(cls, data: dict, products: dict[str, Product]) -> "Order":
+        order = cls(data["Order_ID"], discount_from_dict(data.get("Discount")))
+        for line_data in data["Order_Lines"]:
+            product_id = line_data["Product_ID"]
+            if product_id not in products:
+                raise ValueError(f"Order {order.order_id} references missing product {product_id}.")
+            order_line = OrderLine(products[product_id], line_data["Quantity"])
+            order.__order_lines.append(order_line)
+        if not order.__order_lines:
+            raise ValueError(f"Order {order.order_id} contains no order lines.")
+        order.mark_fulfilled()
+        return order
 #endregion

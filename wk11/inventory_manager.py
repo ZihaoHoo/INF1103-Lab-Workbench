@@ -47,16 +47,8 @@ def load_inventory() -> tuple[Inventory, dict[str, Order]]:
             order_id = item["Order_ID"]
             if order_id in orders: raise ValueError(f"Duplicate Order ID: {order_id}")
 
-            order = Order(order_id)
-            for line in item["Order_Lines"]:
-                product_id = line["Product_ID"]
-                products = inventory.find_products(product_id)
-                product = next((p for p in products if p.product_id == product_id), None)
-                if product is None: raise ValueError(f"Order {order_id} references missing product {product_id}.")
-                order.add_order_line(product, line["Quantity"])
-            if not order.order_lines:
-                raise ValueError(f"Order {order_id} contains no order lines.")
-            order.mark_fulfilled()
+            # Restore the saved discount and already-fulfilled order lines.
+            order = Order.from_dict(item, inventory.get_products())
             orders[order_id] = order
         print("Inventory and orders loaded successfully.")
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
