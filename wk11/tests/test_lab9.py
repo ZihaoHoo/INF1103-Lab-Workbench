@@ -287,7 +287,7 @@ class TestLab9(unittest.TestCase):
         self.assertIsInstance(product, DigitalProduct)
         self.assertEqual(product.download_size, 250.0)
 
-    # Confirm stock updates retry invalid input and allow setting stock to zero.
+    # Confirm stock updates retry invalid input and allow setting stock to 0.
     def test_update_stock_retries(self) -> None:
         inventory = Inventory()
         inventory.add_product(self.product)
