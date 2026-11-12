@@ -64,6 +64,38 @@ def save_inventory(inventory: Inventory, orders: dict[str, Order]) -> None:
         json.dump(data, file, indent=4)
     print("Inventory and orders saved successfully.")
 
+# Load valid CSV rows and report individual failures without stopping the import.
+def load_products(path: str, inventory: Inventory, supplier: Supplier) -> None:
+    loaded = 0
+    try:
+        file = open(path, newline="", encoding="utf-8-sig")
+    except FileNotFoundError:
+        print(f"Products file not found: {path}")
+    except OSError as error:
+        print(f"Unable to open products file: {error}")
+    else:
+        try:
+            with file:
+                reader = csv.reader(file)
+                next(reader, None)
+                for row_number, row in enumerate(reader, start=2):
+                    try:
+                        if len(row) != 5:
+                            raise ValueError("Expected exactly 5 columns.")
+                        product_type, product_id, name, price_text, stock_text = (value.strip() for value in row)
+                        if not product_id or not name:
+                            raise ValueError("Product ID and name cannot be empty.")
+                        product = ProductFactory.create(product_type, product_id, name, float(price_text), int(stock_text), supplier)
+                        inventory.add_product(product)
+                        loaded += 1
+                    except ValueError as error:
+                        print(f"Skipping row {row_number}: {error}")
+        except (OSError, UnicodeError, csv.Error) as error:
+            print(f"Unable to finish reading products file: {error}")
+        print(f"{loaded} products loaded.")
+    finally:
+        print("Load attempt finished.")
+
 #region Generate Order ID
 def generate_next_order_id(orders: dict[str, Order]) -> str:
     max_num = 0
