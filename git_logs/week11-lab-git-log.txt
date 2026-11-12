@@ -1,3 +1,15 @@
+commit c3f552099a9dc29096a72030fa354ea4248092c9
+Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
+Date:   Thu Nov 12 22:00:40 2026 +0800
+
+    Fix encoding issue
+
+commit 2afc5fb5916566c3f35cf94c4ab5b9fda75d666b
+Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
+Date:   Thu Nov 12 21:58:42 2026 +0800
+
+    Add Week 11 Lab Git commit history
+
 commit 244ca2710696e00bc1694eea047e57be2a7026f2
 Author: ZihaoHoo <2603028@sit.singaporetech.edu.sg>
 Date:   Thu Nov 12 21:58:29 2026 +0800
