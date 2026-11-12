@@ -37,8 +37,10 @@ class Product(ABC):
         self.validate_stock(self.stock)
         if not isinstance(self.supplier, Supplier):
             raise TypeError("Supplier must be a Supplier object.")
-        if isinstance(self.price, bool) or not isinstance(self.price, (int, float)) or not math.isfinite(self.price) or self.price < 0:
-            raise ValueError("Price must be a finite non-negative number.")
+        # Reject 0, negative, non-numeric, and non-finite prices
+        if (isinstance(self.price, bool) or not isinstance(self.price, (int, float))
+            or not math.isfinite(self.price) or self.price <= 0):
+            raise ValueError("Price must be a finite number greater than zero.")
 
     def validate_stock(self, quantity: int) -> None:
         if isinstance(quantity, bool) or not isinstance(quantity, int):
@@ -170,6 +172,20 @@ class DigitalProduct(Product):
         data = super().to_dict()
         data.update({"Type": "digital", "Download_Size": self.download_size})
         return data
+#endregion
+
+# Centralise physical and digital product construction.
+#Region ProductFactory
+class ProductFactory:
+    @staticmethod
+    def create(product_type: str, product_id: str, name: str, price: float, stock_quantity: int, 
+               supplier: Supplier, *, weight: float = 0.0, download_size: float = 0.0,) -> Product:
+        product_type = product_type.strip().lower()
+        if product_type == "physical":
+            return PhysicalProduct(product_id, name, price, stock_quantity, weight, supplier)
+        if product_type == "digital":
+            return DigitalProduct(product_id, name, price, stock_quantity, download_size, supplier)
+        raise ValueError(f"Unknown product type: {product_type}")
 #endregion
 
 #region OrderLine

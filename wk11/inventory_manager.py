@@ -1,6 +1,9 @@
+import csv
 import json
+import math
 from pathlib import Path
-from inventory import Supplier, Product, PhysicalProduct, DigitalProduct, Inventory, Order
+from discounts import (DiscountStrategy, NoDiscount, PercentageDiscount, BulkDiscount, StudentDiscount)
+from inventory import (Supplier, ProductFactory, Inventory, Order)
 
 # JSON file location
 FILE_PATH = Path(__file__).parent / "inventory.json"
@@ -35,12 +38,9 @@ def load_inventory() -> tuple[Inventory, dict[str, Order]]:
                 raise ValueError(f"Conflicting supplier details for {supplier_id}.")
             supplier = suppliers[supplier_id]
             product_id, name, price, stock = item["ID"], item["Name"], item["Price"], item["Stock"]
-            if item["Type"] == "physical":
-                product = PhysicalProduct(product_id, name, price, stock, item["Weight"], supplier)
-            elif item["Type"] == "digital":
-                product = DigitalProduct(product_id, name, price, stock, item["Download_Size"], supplier)
-            else:
-                raise ValueError(f"Unknown product type: {item['Type']}")
+            # the factory will rebuild the saved product
+            product = ProductFactory.create(item["Type"], product_id, name, price, stock, supplier, 
+                        weight=item.get("Weight", 0.0), download_size=item.get("Download_Size", 0.0))
             inventory.add_product(product)
         # Load orders
         for item in orders_data:
@@ -102,6 +102,22 @@ def get_supplier(inventory: Inventory) -> Supplier:
     return Supplier(supplier_id, name, contact_email)
 #endregion
 
+# Keep asking until the user provides a finite positive number.
+def get_positive_float(prompt: str) -> float:
+    while True:
+        try:
+            value = float(input(prompt))
+        except ValueError:
+            print("Please enter a valid number, e.g. 12.50")
+            continue
+        try:
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError("Please enter a number greater than zero.")
+        except ValueError as error:
+            print(error)
+        else:
+            return value
+        
 def add_product(inventory: Inventory) -> None:
     product_type = input( "Choose product type (1. Physical, 2. Digital): " ).strip()
     if product_type not in ("1", "2"):
@@ -112,24 +128,22 @@ def add_product(inventory: Inventory) -> None:
         if not name:
             print("Product name cannot be empty.")
             return
-        price = float(input("Enter product price: $"))
+        # Retry invalid price input before collecting the remaining details.
+        price = get_positive_float("Enter product price: $")
         stock = int(input("Enter initial stock quantity: "))
 
-        if price < 0:
-            raise ValueError("Price cannot be negative.")
         supplier = get_supplier(inventory)
         product_id = inventory.generate_next_id()
 
+        # Collect type-specific details before delegating construction to the factory.
         if product_type == "1":
-            weight = float(input("Enter product weight (kg): "))
-            if weight < 0:
-                raise ValueError("Weight cannot be negative.")
-            product = PhysicalProduct(product_id, name, price, stock, weight, supplier)
+            details = {"weight": float(input("Enter product weight (kg): "))}
+            factory_type = "physical"
         else:
-            download_size = float(input("Enter download size (MB): "))
-            if download_size < 0:
-                raise ValueError("Download size cannot be negative.")
-            product = DigitalProduct(product_id, name, price, stock, download_size, supplier)
+            details = {"download_size": float(input("Enter download size (MB): "))}
+            factory_type = "digital"
+
+        product = ProductFactory.create(factory_type, product_id, name, price, stock, supplier, **details)
         inventory.add_product(product)
         print(f"Product {product_id} added successfully.")
     except ValueError as error:
@@ -177,6 +191,24 @@ def remove_product(inventory: Inventory, orders: dict[str, Order]) -> None:
     print(f"Product {product_id} removed successfully.")
 #endregion
 
+# Let the user choose a strategy without putting discount logic inside Order.
+def choose_discount() -> DiscountStrategy:
+    options = {
+        "1": ("No discount", NoDiscount()),
+        "2": ("Percentage discount: 10%", PercentageDiscount(10)),
+        "3": ("Bulk discount: $20 off orders of at least $200", BulkDiscount(200, 20)),
+        "4": ("Student discount: 5%", StudentDiscount()),
+    }
+
+    print("\n===== Select Discount =====")
+    for key, (label, _) in options.items():
+        print(f"{key}. {label}")
+    while True:
+        choice = input("Choose discount (1-4, blank for none): ").strip() or "1"
+        if choice in options:
+            return options[choice][1]
+        print("Invalid choice. Please enter a number from 1 to 4.")
+
 #region Create order
 def create_order(inventory: Inventory, orders: dict[str, Order]) -> Order | None:
     if len(inventory) == 0:
@@ -203,6 +235,8 @@ def create_order(inventory: Inventory, orders: dict[str, Order]) -> Order | None
     if not order.order_lines:
         print("Order cancelled. No products were added.")
         return None
+    # Apply the selected strategy before displaying and saving the order.
+    order.set_discount(choose_discount())
     order.display_information()
     return order
 #endregion
