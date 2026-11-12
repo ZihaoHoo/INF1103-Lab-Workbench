@@ -4,15 +4,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import MagicMock, patch
-from inventory import DigitalProduct, Inventory, Order, PhysicalProduct, Product, Supplier
+from inventory import Inventory, Order, Product, ProductFactory, Supplier
 from inventory_manager import create_order, generate_next_order_id, load_inventory, save_inventory
 
 
 class TestLab8(unittest.TestCase):
     def setUp(self) -> None:
         self.supplier = Supplier("S001", "ABC Supplies", "abc@example.com")
-        self.physical = PhysicalProduct("P001", "CD", 12.0, 20, 0.5, self.supplier)
-        self.digital = DigitalProduct("P002", "VSCode", 12.0, 30, 250.0, self.supplier)
+        self.physical = ProductFactory.create("physical", "P001", "CD", 12.0, 20, self.supplier, weight=0.5)
+        self.digital = ProductFactory.create("digital", "P002", "VSCode", 12.0, 30, self.supplier, download_size=250.0)
     #Region Association
     def test_01_supplier_association(self) -> None:
         self.assertIs(self.physical.supplier, self.supplier)
@@ -124,9 +124,9 @@ class TestLab8(unittest.TestCase):
         self.assertEqual(inventory.find_products("cd"), [self.physical])
     def test_18_search_multiple_products(self) -> None:
         inventory = Inventory()
-        milk = PhysicalProduct("P003", "Milk", 3.50, 20, 1.0, self.supplier)
-        chocolate_milk = PhysicalProduct("P004", "Chocolate Milk", 4.20, 15, 1.0, self.supplier)
-        low_fat_milk = PhysicalProduct("P005", "Low Fat Milk", 3.80, 10, 1.0, self.supplier)
+        milk = ProductFactory.create("physical", "P003", "Milk", 3.50, 20, self.supplier, weight=1.0)
+        chocolate_milk = ProductFactory.create("physical", "P004", "Chocolate Milk", 4.20, 15, self.supplier, weight=1.0)
+        low_fat_milk = ProductFactory.create("physical", "P005", "Low Fat Milk", 3.80, 10, self.supplier, weight=1.0)
         for product in [milk, chocolate_milk, low_fat_milk]: inventory.add_product(product)
         results = inventory.find_products("milk")
         self.assertEqual(len(results), 3)
@@ -142,7 +142,7 @@ class TestLab8(unittest.TestCase):
         inventory = Inventory()
         inventory.add_product(self.physical)
         inventory.add_product(self.digital)
-        inputs = ["O001", "001", "2", "002", "3", ""]
+        inputs = ["001", "2", "002", "3", "", "1"]
         output = StringIO()
         with patch("builtins.input", side_effect=inputs):
             with redirect_stdout(output):
@@ -158,7 +158,8 @@ class TestLab8(unittest.TestCase):
     def test_23_order_serialization(self) -> None:
         order = Order("O001")
         order.add_order_line(self.physical, 2)
-        self.assertEqual(order.to_dict(), {"Order_ID": "O001", "Order_Lines": [{"Product_ID": "P001", "Quantity": 2}]})
+        self.assertEqual(order.to_dict(), { "Order_ID": "O001", "Discount": {"Type": "NoDiscount"}, 
+                                           "Order_Lines": [{"Product_ID": "P001", "Quantity": 2}], })    
     def test_24_empty_order_cancelled(self) -> None:
         inventory = Inventory()
         inventory.add_product(self.physical)
@@ -169,7 +170,7 @@ class TestLab8(unittest.TestCase):
     def test_25_create_order_by_numeric_product_id(self) -> None:
         inventory = Inventory()
         inventory.add_product(self.physical)
-        with patch("builtins.input", side_effect=["001", "2", ""]):
+        with patch("builtins.input", side_effect=["001", "2", "", "1"]):
             with redirect_stdout(StringIO()):
                 order = create_order(inventory, {})
         self.assertIsNotNone(order)
